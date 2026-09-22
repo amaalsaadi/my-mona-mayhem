@@ -39,12 +39,17 @@ function persistTheme(storage, themeStorageKey, theme) {
 
 export function initializeBattleThemeToggle({
 	themeStorageKey,
-	documentRef = document,
+	documentRef,
 	storage = globalThis.localStorage
 }) {
-	const themeToggle = documentRef.querySelector('[data-theme-toggle]');
-	const themeStatus = documentRef.querySelector('[data-theme-status]');
-	const root = documentRef.documentElement;
+	const resolvedDocument = documentRef ?? globalThis.document;
+	if (!resolvedDocument) {
+		return null;
+	}
+
+	const themeToggle = resolvedDocument.querySelector('[data-theme-toggle]');
+	const themeStatus = resolvedDocument.querySelector('[data-theme-status]');
+	const root = resolvedDocument.documentElement;
 
 	if (!themeToggle || !root) {
 		return null;
