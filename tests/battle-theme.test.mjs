@@ -1,18 +1,21 @@
-import test from 'node:test';
+import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const DEV_SERVER_PORT = 4322;
 const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}/`;
 const DEV_SERVER_READY_TEXT = `http://127.0.0.1:${DEV_SERVER_PORT}/`;
-const REPO_ROOT = '/home/runner/work/my-mona-mayhem/my-mona-mayhem';
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASTRO_BIN = path.join(
 	REPO_ROOT,
 	'node_modules',
 	'.bin',
 	process.platform === 'win32' ? 'astro.cmd' : 'astro'
 );
+let server;
+let scriptBody;
 
 async function startDevServer() {
 	const server = spawn(ASTRO_BIN, ['dev', '--host', '127.0.0.1', '--port', String(DEV_SERVER_PORT)], {
@@ -123,46 +126,41 @@ function executeThemeScript(scriptBody, savedTheme) {
 	};
 }
 
-test('restores saved blue/orange battle theme from localStorage', async () => {
-	const server = await startDevServer();
-
-	try {
-		const scriptBody = await getBattleThemeScript();
-		const page = executeThemeScript(scriptBody, 'blue-orange');
-
-		assert.equal(page.root.dataset.battleTheme, 'blue-orange');
-		assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'true');
-		assert.equal(
-			page.themeToggle.getAttribute('aria-label'),
-			'Switch to classic green and purple battle theme'
-		);
-		assert.match(page.themeToggle.textContent, /Classic Green\/Purple Theme/);
-	} finally {
-		await stopDevServer(server);
-	}
+before(async () => {
+	server = await startDevServer();
+	scriptBody = await getBattleThemeScript();
 });
 
-test('toggles from classic to blue/orange theme and persists the choice', async () => {
-	const server = await startDevServer();
+after(async () => {
+	await stopDevServer(server);
+});
 
-	try {
-		const scriptBody = await getBattleThemeScript();
-		const page = executeThemeScript(scriptBody, null);
+test('restores saved blue/orange battle theme from localStorage', () => {
+	const page = executeThemeScript(scriptBody, 'blue-orange');
 
-		assert.equal(page.root.dataset.battleTheme, 'classic');
-		assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'false');
-		assert.equal(page.themeToggle.getAttribute('aria-label'), 'Switch to blue and orange battle theme');
+	assert.equal(page.root.dataset.battleTheme, 'blue-orange');
+	assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'true');
+	assert.equal(
+		page.themeToggle.getAttribute('aria-label'),
+		'Switch to classic green and purple battle theme'
+	);
+	assert.match(page.themeToggle.textContent, /Classic Green\/Purple Theme/);
+});
 
-		page.click();
+test('toggles from classic to blue/orange theme and persists the choice', () => {
+	const page = executeThemeScript(scriptBody, null);
 
-		assert.equal(page.root.dataset.battleTheme, 'blue-orange');
-		assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'true');
-		assert.equal(
-			page.themeToggle.getAttribute('aria-label'),
-			'Switch to classic green and purple battle theme'
-		);
-		assert.deepEqual(page.writes, [['monaMayhemBattleTheme', 'blue-orange']]);
-	} finally {
-		await stopDevServer(server);
-	}
+	assert.equal(page.root.dataset.battleTheme, 'classic');
+	assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'false');
+	assert.equal(page.themeToggle.getAttribute('aria-label'), 'Switch to blue and orange battle theme');
+
+	page.click();
+
+	assert.equal(page.root.dataset.battleTheme, 'blue-orange');
+	assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'true');
+	assert.equal(
+		page.themeToggle.getAttribute('aria-label'),
+		'Switch to classic green and purple battle theme'
+	);
+	assert.deepEqual(page.writes, [['monaMayhemBattleTheme', 'blue-orange']]);
 });
