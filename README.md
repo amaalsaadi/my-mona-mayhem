@@ -2,16 +2,35 @@
 
 # 🎮 Mona Mayhem
 
-**VS Code & GitHub Copilot CLI Workshop** — Build a GitHub Contribution Battle Arena
+> Build a retro GitHub contribution battle arena with Astro, VS Code, and GitHub Copilot.
 
-A workshop template for building a retro arcade-themed website with Astro that compares GitHub contribution graphs of two users. This is the **starting point** — you'll build the app step by step using GitHub Copilot.
+**Mona Mayhem** is a hands-on workshop template for building an arcade-style website that compares two GitHub contribution graphs in a playful head-to-head showdown.
+
+This repository is the **starting point**: you'll use GitHub Copilot to plan, scaffold, build, theme, and polish the app step by step.
+
+**Best for:** live workshops, self-guided learning, and anyone who wants a fun project for practicing agentic Copilot workflows.
+
+- 🕹️ **Build something fun** instead of a generic demo app
+- 🤖 **Practice real Copilot workflows** in either VS Code or the CLI
+- 🧱 **Start from a clean template** with a guided path from idea to finished experience
 
 ![Mona Mayhem Screenshot](https://github.com/user-attachments/assets/5eca79e2-cb9f-4e93-aa0d-23666ebde3b7)
 *What you'll build by the end of the workshop*
 
+## ✨ Why this repo works well as a workshop
+
+By the end of the workshop, you'll have experience with:
+
+- planning features with Copilot before writing code
+- scaffolding Astro pages and API routes
+- iterating on UI direction with design-first prompts
+- using agentic workflows for implementation, review, and polish
+
+If you want a workshop repo that feels more like a mini game studio than a tutorial app, this is it.
+
 ## 📚 Workshop
 
-The workshop supports two tracks — follow the one that matches your preferred workflow:
+The workshop supports two tracks — pick the one that matches how you like to build:
 
 - **VS Code track** — Chat, Plan Mode, Agent Mode, background agents, and editor-native review loops
 - **CLI track** — `copilot`, `@file` context, `/plan`, autonomous edits, `/fleet`, `/delegate`, and `/review`
@@ -35,6 +54,13 @@ The workshop supports two tracks — follow the one that matches your preferred 
    - **VS Code:** clone your repo and open it in VS Code.
    - **GitHub Copilot CLI:** clone your repo locally, install `copilot`, and work from your terminal.
 3. Follow the [workshop guide](workshop/00-overview.md)
+
+## 🧭 What you'll find in this repository
+
+- `workshop/` — the guided workshop sequence
+- `src/` — the Astro app you’ll build out during the exercises
+- `docs/` — supporting documentation and published workshop content
+- `public/` — static assets for the site experience
 
 ## Prerequisites
 
