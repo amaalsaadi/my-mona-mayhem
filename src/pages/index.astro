@@ -322,9 +322,8 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 					class="theme-toggle"
 					type="button"
 					data-theme-toggle
-					role="switch"
 					aria-label="Switch to blue and orange battle theme"
-					aria-checked="false"
+					aria-pressed="false"
 				>
 					🎨 Switch to Blue/Orange Theme
 				</button>
@@ -405,7 +404,7 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 						? 'Switch to classic green and purple battle theme'
 						: 'Switch to blue and orange battle theme'
 				);
-				themeToggle.setAttribute('aria-checked', String(theme === altTheme));
+				themeToggle.setAttribute('aria-pressed', String(theme === altTheme));
 				themeToggle.textContent =
 					theme === altTheme
 						? '🟢 Switch to Classic Green/Purple Theme'
