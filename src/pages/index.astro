@@ -199,9 +199,12 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 				grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 			}
 
-			label {
+			.field {
 				display: grid;
 				gap: 0.6rem;
+			}
+
+			label {
 				font-weight: 700;
 				color: var(--text-primary);
 			}
@@ -319,7 +322,8 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 					class="theme-toggle"
 					type="button"
 					data-theme-toggle
-					aria-label="Toggle battle color theme"
+					aria-label="Switch to blue and orange battle theme"
+					aria-pressed="false"
 				>
 					🎨 Switch to Blue/Orange Theme
 				</button>
@@ -354,14 +358,14 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 				<h2>Choose your challengers</h2>
 
 				<div class="form-grid">
-					<label>
-						Player one
-						<input type="text" name="playerOne" value="monalisa" />
-					</label>
-					<label>
-						Player two
-						<input type="text" name="playerTwo" value="octocat" />
-					</label>
+					<div class="field">
+						<label for="player-one">Player one</label>
+						<input id="player-one" type="text" name="playerOne" value="monalisa" />
+					</div>
+					<div class="field">
+						<label for="player-two">Player two</label>
+						<input id="player-two" type="text" name="playerTwo" value="octocat" />
+					</div>
 				</div>
 
 				<div class="actions">
@@ -371,7 +375,7 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 
 				<div class="vs-pill">VS</div>
 
-				<div class="results-grid" aria-label="Battle results preview">
+				<section class="results-grid" aria-label="Battle results preview">
 					<article class="result-card">
 						<p class="user-handle">@monalisa</p>
 						<h3>1,284 contributions</h3>
@@ -382,7 +386,7 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 						<h3>1,102 contributions</h3>
 						<p class="result-meta">Swap the palette without rewriting component-level CSS.</p>
 					</article>
-				</div>
+				</section>
 			</section>
 		</div>
 
@@ -394,6 +398,13 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 
 			function updateToggleLabel(theme) {
 				if (!themeToggle) return;
+				themeToggle.setAttribute(
+					'aria-label',
+					theme === altTheme
+						? 'Switch to classic green and purple battle theme'
+						: 'Switch to blue and orange battle theme'
+				);
+				themeToggle.setAttribute('aria-pressed', String(theme === altTheme));
 				themeToggle.textContent =
 					theme === altTheme
 						? '🟢 Switch to Classic Green/Purple Theme'
