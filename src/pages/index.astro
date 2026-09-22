@@ -81,6 +81,8 @@
 
 			.top-bar {
 				display: flex;
+				align-items: center;
+				gap: 1rem;
 				justify-content: flex-end;
 				margin-bottom: 2rem;
 			}
@@ -101,6 +103,11 @@
 			.theme-toggle:hover {
 				transform: translateY(-1px);
 				border-color: var(--accent-primary);
+			}
+
+			.theme-status {
+				color: var(--text-secondary);
+				font-weight: 700;
 			}
 
 			.hero,
@@ -302,6 +309,7 @@
 
 				.top-bar {
 					justify-content: center;
+					flex-direction: column;
 				}
 
 				.theme-toggle,
@@ -314,11 +322,12 @@
 	<body>
 		<div class="page-shell">
 			<div class="top-bar">
+				<p class="theme-status" data-theme-status>Current theme: Classic Green/Purple</p>
 				<button
 					class="theme-toggle"
 					type="button"
 					data-theme-toggle
-					aria-label="Switch to blue and orange battle theme"
+					aria-label="Current theme is Classic Green/Purple. Activate to switch to Blue/Orange Theme"
 					aria-pressed="false"
 				>
 					🎨 Switch to Blue/Orange Theme
@@ -386,7 +395,7 @@
 			</section>
 		</div>
 
-		<script type="module">
+		<script>
 			import { initializeBattleThemeToggle } from '../scripts/battleTheme.js';
 
 			initializeBattleThemeToggle({ themeStorageKey: 'monaMayhemBattleTheme' });
