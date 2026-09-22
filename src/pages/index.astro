@@ -1,3 +1,7 @@
+---
+import battleThemeScript from '../scripts/initBattleTheme.js?url';
+---
+
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -102,6 +106,12 @@
 
 			.theme-toggle:hover {
 				transform: translateY(-1px);
+				border-color: var(--accent-primary);
+			}
+
+			.theme-toggle:focus-visible {
+				outline: 2px solid var(--accent-primary);
+				outline-offset: 3px;
 				border-color: var(--accent-primary);
 			}
 
@@ -245,6 +255,14 @@
 				background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
 				color: var(--button-text);
 				box-shadow: 0 0 22px var(--accent-primary-soft);
+			}
+
+			.battle-button:focus-visible {
+				outline: 2px solid var(--accent-primary);
+				outline-offset: 3px;
+				box-shadow:
+					0 0 0 3px var(--accent-primary-soft),
+					0 0 22px var(--accent-primary-soft);
 			}
 
 			.helper-copy,
@@ -395,10 +413,6 @@
 			</section>
 		</div>
 
-		<script>
-			import { initializeBattleThemeToggle } from '../scripts/battleTheme.js';
-
-			initializeBattleThemeToggle({ themeStorageKey: 'monaMayhemBattleTheme' });
-		</script>
+		<script type="module" src={battleThemeScript}></script>
 	</body>
 </html>
