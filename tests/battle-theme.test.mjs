@@ -1,84 +1,16 @@
-import test, { after, before } from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const DEV_SERVER_PORT = 4322;
-const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}/`;
-const DEV_SERVER_READY_TEXT = `http://127.0.0.1:${DEV_SERVER_PORT}/`;
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const ASTRO_BIN = path.join(
-	REPO_ROOT,
-	'node_modules',
-	'.bin',
-	process.platform === 'win32' ? 'astro.cmd' : 'astro'
-);
-let server;
-let scriptBody;
+import {
+	ALT_THEME,
+	CLASSIC_THEME,
+	initializeBattleThemeToggle
+} from '../src/scripts/battleTheme.js';
 
-async function startDevServer() {
-	const server = spawn(ASTRO_BIN, ['dev', '--host', '127.0.0.1', '--port', String(DEV_SERVER_PORT)], {
-		cwd: REPO_ROOT,
-		stdio: ['ignore', 'pipe', 'pipe']
-	});
-
-	await new Promise((resolve, reject) => {
-		const onData = (chunk) => {
-			const text = chunk.toString();
-			if (text.includes(DEV_SERVER_READY_TEXT)) {
-				cleanup();
-				resolve();
-			}
-		};
-
-		const onExit = (code) => {
-			cleanup();
-			reject(new Error(`Dev server exited before becoming ready (code ${code ?? 'unknown'}).`));
-		};
-
-		const cleanup = () => {
-			server.stdout.off('data', onData);
-			server.stderr.off('data', onData);
-			server.off('exit', onExit);
-		};
-
-		server.stdout.on('data', onData);
-		server.stderr.on('data', onData);
-		server.once('exit', onExit);
-	});
-
-	return server;
-}
-
-function stopDevServer(server) {
-	return new Promise((resolve) => {
-		const timeout = setTimeout(() => {
-			server.kill('SIGKILL');
-		}, 2_000);
-
-		server.once('exit', () => {
-			clearTimeout(timeout);
-			resolve();
-		});
-
-		server.kill('SIGTERM');
-	});
-}
-
-async function getBattleThemeScript() {
-	const response = await fetch(DEV_SERVER_URL);
-	const html = await response.text();
-	const scriptMatch = html.match(/<script>\(function\(\)\{([\s\S]*?)\}\)\(\);<\/script>/);
-
-	assert.ok(scriptMatch, 'Expected rendered page to include inline theme toggle script.');
-
-	return scriptMatch[1];
-}
-
-function executeThemeScript(scriptBody, savedTheme) {
+function createHarness(savedTheme) {
 	const listeners = new Map();
 	const attributes = new Map();
+	const writes = [];
 	const themeToggle = {
 		textContent: '',
 		setAttribute(name, value) {
@@ -92,29 +24,30 @@ function executeThemeScript(scriptBody, savedTheme) {
 		}
 	};
 	const root = { dataset: {} };
-	const writes = [];
-	const context = {
-		console: { warn() {} },
-		document: {
-			documentElement: root,
-			querySelector(selector) {
-				return selector === '[data-theme-toggle]' ? themeToggle : null;
-			}
+	const storage = {
+		getItem(key) {
+			assert.equal(key, 'monaMayhemBattleTheme');
+			return savedTheme;
 		},
-		localStorage: {
-			getItem(key) {
-				assert.equal(key, 'monaMayhemBattleTheme');
-				return savedTheme;
-			},
-			setItem(key, value) {
-				writes.push([key, value]);
-			}
+		setItem(key, value) {
+			writes.push([key, value]);
+		}
+	};
+	const documentRef = {
+		documentElement: root,
+		querySelector(selector) {
+			return selector === '[data-theme-toggle]' ? themeToggle : null;
 		}
 	};
 
-	Function('context', `with (context) { ${scriptBody} }`)(context);
+	const controls = initializeBattleThemeToggle({
+		themeStorageKey: 'monaMayhemBattleTheme',
+		documentRef,
+		storage
+	});
 
 	return {
+		controls,
 		root,
 		themeToggle,
 		click() {
@@ -126,41 +59,33 @@ function executeThemeScript(scriptBody, savedTheme) {
 	};
 }
 
-before(async () => {
-	server = await startDevServer();
-	scriptBody = await getBattleThemeScript();
-});
+test('restores saved blue/orange battle theme from storage', () => {
+	const page = createHarness(ALT_THEME);
 
-after(async () => {
-	await stopDevServer(server);
-});
-
-test('restores saved blue/orange battle theme from localStorage', () => {
-	const page = executeThemeScript(scriptBody, 'blue-orange');
-
-	assert.equal(page.root.dataset.battleTheme, 'blue-orange');
+	assert.equal(page.root.dataset.battleTheme, ALT_THEME);
 	assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'true');
 	assert.equal(
 		page.themeToggle.getAttribute('aria-label'),
 		'Switch to classic green and purple battle theme'
 	);
 	assert.match(page.themeToggle.textContent, /Classic Green\/Purple Theme/);
+	assert.ok(page.controls, 'Expected initializer to return toggle controls.');
 });
 
 test('toggles from classic to blue/orange theme and persists the choice', () => {
-	const page = executeThemeScript(scriptBody, null);
+	const page = createHarness(null);
 
-	assert.equal(page.root.dataset.battleTheme, 'classic');
+	assert.equal(page.root.dataset.battleTheme, CLASSIC_THEME);
 	assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'false');
 	assert.equal(page.themeToggle.getAttribute('aria-label'), 'Switch to blue and orange battle theme');
 
 	page.click();
 
-	assert.equal(page.root.dataset.battleTheme, 'blue-orange');
+	assert.equal(page.root.dataset.battleTheme, ALT_THEME);
 	assert.equal(page.themeToggle.getAttribute('aria-pressed'), 'true');
 	assert.equal(
 		page.themeToggle.getAttribute('aria-label'),
 		'Switch to classic green and purple battle theme'
 	);
-	assert.deepEqual(page.writes, [['monaMayhemBattleTheme', 'blue-orange']]);
+	assert.deepEqual(page.writes, [['monaMayhemBattleTheme', ALT_THEME]]);
 });
