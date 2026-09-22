@@ -322,8 +322,9 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 					class="theme-toggle"
 					type="button"
 					data-theme-toggle
+					role="switch"
 					aria-label="Switch to blue and orange battle theme"
-					aria-pressed="false"
+					aria-checked="false"
 				>
 					🎨 Switch to Blue/Orange Theme
 				</button>
@@ -404,7 +405,7 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 						? 'Switch to classic green and purple battle theme'
 						: 'Switch to blue and orange battle theme'
 				);
-				themeToggle.setAttribute('aria-pressed', String(theme === altTheme));
+				themeToggle.setAttribute('aria-checked', String(theme === altTheme));
 				themeToggle.textContent =
 					theme === altTheme
 						? '🟢 Switch to Classic Green/Purple Theme'
@@ -416,13 +417,22 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 				updateToggleLabel(theme);
 			}
 
-			const savedTheme = localStorage.getItem(themeStorageKey);
-			applyBattleTheme(savedTheme === altTheme ? altTheme : classicTheme);
+			let savedTheme = classicTheme;
+			try {
+				savedTheme = localStorage.getItem(themeStorageKey) === altTheme ? altTheme : classicTheme;
+			} catch (error) {
+				console.warn('Unable to read saved battle theme preference.', error);
+			}
+			applyBattleTheme(savedTheme);
 
 			themeToggle?.addEventListener('click', () => {
 				const nextTheme = root.dataset.battleTheme === altTheme ? classicTheme : altTheme;
 				applyBattleTheme(nextTheme);
-				localStorage.setItem(themeStorageKey, nextTheme);
+				try {
+					localStorage.setItem(themeStorageKey, nextTheme);
+				} catch (error) {
+					console.warn('Unable to save battle theme preference.', error);
+				}
 			});
 		</script>
 	</body>
