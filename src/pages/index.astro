@@ -8,10 +8,578 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Mona Mayhem</title>
+		<title>Mona Mayhem - GitHub Contribution Battle Arena</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 	</head>
 	<body>
-		<h1>Mona Mayhem</h1>
-		<p>Welcome to Mona Mayhem! Time to build a GitHub Contribution Battle Arena.</p>
+		<main>
+			<h1>Mona Mayhem</h1>
+			<p class="subtitle">GitHub Contribution Battle Arena</p>
+
+			<form id="battle-form" novalidate>
+				<div class="players">
+					<div class="player">
+						<label for="player1">Player 1</label>
+						<input
+							id="player1"
+							name="player1"
+							type="text"
+							placeholder="GitHub username"
+							required
+							maxlength="39"
+							autocomplete="off"
+							aria-describedby="player1-error"
+						/>
+						<p id="player1-error" class="field-error" hidden></p>
+					</div>
+					<div class="player">
+						<label for="player2">Player 2</label>
+						<input
+							id="player2"
+							name="player2"
+							type="text"
+							placeholder="GitHub username"
+							required
+							maxlength="39"
+							autocomplete="off"
+							aria-describedby="player2-error"
+						/>
+						<p id="player2-error" class="field-error" hidden></p>
+					</div>
+				</div>
+				<button type="submit" id="battle-btn">⚔️ Battle!</button>
+			</form>
+
+			<p id="battle-error" role="alert" hidden></p>
+
+			<section id="results" aria-live="polite"></section>
+		</main>
 	</body>
 </html>
+
+<script>
+	import { isValidGitHubUsername } from '../utils/githubUsername';
+
+	interface ContributionDay {
+		weekday: number;
+		count: number;
+		level: number;
+	}
+
+	interface ContributionWeek {
+		index: number;
+		first_day: string;
+		contribution_days: ContributionDay[];
+	}
+
+	interface ContributionMonth {
+		month: string;
+		total_weeks: number;
+	}
+
+	interface ContributionData {
+		from: string;
+		to: string;
+		total_contributions: number;
+		colors_full: string[];
+		weeks: ContributionWeek[];
+		months: ContributionMonth[];
+	}
+
+	interface PlayerResult {
+		username: string;
+		data: ContributionData;
+	}
+
+	const form = document.getElementById('battle-form') as HTMLFormElement;
+	const player1Input = document.getElementById('player1') as HTMLInputElement;
+	const player2Input = document.getElementById('player2') as HTMLInputElement;
+	const player1Error = document.getElementById('player1-error') as HTMLParagraphElement;
+	const player2Error = document.getElementById('player2-error') as HTMLParagraphElement;
+	const battleBtn = document.getElementById('battle-btn') as HTMLButtonElement;
+	const errorEl = document.getElementById('battle-error') as HTMLParagraphElement;
+	const resultsEl = document.getElementById('results') as HTMLElement;
+
+	function showError(message: string) {
+		errorEl.textContent = message;
+		errorEl.hidden = false;
+		errorEl.classList.remove('shake');
+		void errorEl.offsetWidth;
+		errorEl.classList.add('shake');
+	}
+
+	function clearError() {
+		errorEl.hidden = true;
+		errorEl.textContent = '';
+		errorEl.classList.remove('shake');
+	}
+
+	function setFieldError(input: HTMLInputElement, error: HTMLParagraphElement, message: string) {
+		input.setAttribute('aria-invalid', 'true');
+		error.textContent = message;
+		error.hidden = false;
+		input.closest('.player')?.classList.add('has-error');
+	}
+
+	function clearFieldError(input: HTMLInputElement, error: HTMLParagraphElement) {
+		input.removeAttribute('aria-invalid');
+		error.textContent = '';
+		error.hidden = true;
+		input.closest('.player')?.classList.remove('has-error');
+	}
+
+	function validateUsername(
+		input: HTMLInputElement,
+		error: HTMLParagraphElement,
+		playerLabel: string,
+	): boolean {
+		const username = input.value.trim();
+		clearFieldError(input, error);
+
+		if (!username) {
+			setFieldError(input, error, `${playerLabel} username is required.`);
+			return false;
+		}
+		if (!isValidGitHubUsername(username)) {
+			setFieldError(
+				input,
+				error,
+				'Use 1-39 letters, numbers, or single hyphens; do not start or end with a hyphen.',
+			);
+			return false;
+		}
+
+		return true;
+	}
+
+	async function fetchContributions(username: string): Promise<PlayerResult> {
+		const response = await fetch(`/api/contributions/${encodeURIComponent(username)}`);
+		const body = await response.json().catch(() => null);
+		if (!response.ok) {
+			const message =
+				response.status === 404
+					? `GitHub username "${username}" was not found.`
+					: body && typeof body.error === 'string'
+						? body.error
+						: `Failed to load data for ${username}`;
+			throw new Error(message);
+		}
+		return { username, data: body as ContributionData };
+	}
+
+	function dayDate(week: ContributionWeek, day: ContributionDay): Date {
+		const date = new Date(week.first_day);
+		date.setDate(date.getDate() + day.weekday);
+		return date;
+	}
+
+	function renderGrid(result: PlayerResult): string {
+		const { data } = result;
+		const weeks = data.weeks
+			.map((week) => {
+				const days = week.contribution_days
+					.map((day) => {
+						const color = data.colors_full[day.level] ?? data.colors_full[0];
+						const date = dayDate(week, day).toISOString().slice(0, 10);
+						return `<span class="day" style="background-color:${color};grid-row:${day.weekday + 1}" title="${date}: ${day.count} contributions"></span>`;
+					})
+					.join('');
+				return `<div class="week">${days}</div>`;
+			})
+			.join('');
+		return `<div class="grid">${weeks}</div>`;
+	}
+
+	function renderPlayerPanel(result: PlayerResult): string {
+		const { username, data } = result;
+		return `
+			<div class="player-panel">
+				<h2>${username}</h2>
+				<p class="total">${data.total_contributions} contributions</p>
+				<p class="range">${data.from} to ${data.to}</p>
+				${renderGrid(result)}
+			</div>
+		`;
+	}
+
+	function renderLoading() {
+		resultsEl.innerHTML = '<p class="loading">Loading battle data...</p>';
+	}
+
+	function renderResults(player1: PlayerResult, player2: PlayerResult) {
+		resultsEl.innerHTML = `
+			<div class="battle-grid">
+				${renderPlayerPanel(player1)}
+				<div class="vs-badge">VS</div>
+				${renderPlayerPanel(player2)}
+			</div>
+		`;
+	}
+
+	async function handleBattle(event: SubmitEvent) {
+		event.preventDefault();
+		clearError();
+
+		const username1 = player1Input.value.trim();
+		const username2 = player2Input.value.trim();
+		const player1IsValid = validateUsername(player1Input, player1Error, 'Player 1');
+		const player2IsValid = validateUsername(player2Input, player2Error, 'Player 2');
+
+		if (!player1IsValid || !player2IsValid) {
+			showError('Check the highlighted username fields and try again.');
+			(player1IsValid ? player2Input : player1Input).focus();
+			return;
+		}
+
+		battleBtn.disabled = true;
+		renderLoading();
+
+		try {
+			const [player1, player2] = await Promise.all([
+				fetchContributions(username1),
+				fetchContributions(username2),
+			]);
+			renderResults(player1, player2);
+		} catch (error) {
+			resultsEl.innerHTML = '';
+			showError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+		} finally {
+			battleBtn.disabled = false;
+		}
+	}
+
+	form.addEventListener('submit', handleBattle);
+	player1Input.addEventListener('input', () => {
+		if (player1Input.hasAttribute('aria-invalid')) {
+			validateUsername(player1Input, player1Error, 'Player 1');
+		}
+	});
+	player2Input.addEventListener('input', () => {
+		if (player2Input.hasAttribute('aria-invalid')) {
+			validateUsername(player2Input, player2Error, 'Player 2');
+		}
+	});
+</script>
+
+<style>
+	:root {
+		--bg: #0d0d0d;
+		--panel: #1a1a1a;
+		--neon-blue: #3b9bff;
+		--neon-purple: #8a2be2;
+		--neon-red: #ff3366;
+	}
+
+	* {
+		box-sizing: border-box;
+	}
+
+	body {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0;
+		min-height: 100vh;
+		background: var(--bg);
+		color: var(--neon-blue);
+		font-family: monospace;
+	}
+
+	main {
+		width: 100%;
+		max-width: 1200px;
+		padding: 2rem 1.5rem;
+		text-align: center;
+	}
+
+	h1 {
+		font-family: 'Press Start 2P', monospace;
+		font-size: 1.75rem;
+		color: var(--neon-blue);
+		text-shadow: 0 0 8px var(--neon-blue);
+	}
+
+	.subtitle {
+		font-family: 'Press Start 2P', monospace;
+		font-size: 0.75rem;
+		color: var(--neon-purple);
+		margin-bottom: 2rem;
+	}
+
+	.players {
+		display: flex;
+		flex-direction: row;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.player {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		text-align: left;
+	}
+
+	label {
+		font-size: 0.75rem;
+		letter-spacing: 0.05em;
+	}
+
+	input {
+		background: var(--panel);
+		border: 2px solid var(--neon-blue);
+		color: var(--neon-blue);
+		font-family: monospace;
+		font-size: 1rem;
+		padding: 0.6rem;
+		outline: none;
+	}
+
+	input:focus-visible {
+		border-color: var(--neon-purple);
+		box-shadow: 0 0 10px var(--neon-purple);
+		outline: 3px solid var(--neon-purple);
+		outline-offset: 3px;
+	}
+
+	input[aria-invalid='true'] {
+		border-color: var(--neon-red);
+		box-shadow: 0 0 8px color-mix(in srgb, var(--neon-red) 75%, transparent);
+		color: var(--neon-red);
+	}
+
+	input[aria-invalid='true']:focus-visible {
+		outline-color: var(--neon-red);
+	}
+
+	button {
+		font-family: 'Press Start 2P', monospace;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		background: var(--bg);
+		color: var(--neon-purple);
+		border: 2px solid var(--neon-purple);
+		padding: 0.8rem 1.5rem;
+		cursor: pointer;
+	}
+
+	button:hover,
+	button:active {
+		background: var(--neon-purple);
+		color: var(--bg);
+	}
+
+	button:focus-visible {
+		background: var(--neon-purple);
+		color: var(--bg);
+		outline: 3px solid var(--neon-blue);
+		outline-offset: 4px;
+	}
+
+	button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	#battle-error {
+		max-width: 700px;
+		margin: 1rem auto 0;
+		border: 2px solid var(--neon-red);
+		background: color-mix(in srgb, var(--neon-red) 10%, var(--panel));
+		box-shadow: 0 0 8px var(--neon-red), inset 0 0 8px color-mix(in srgb, var(--neon-red) 45%, transparent);
+		color: var(--neon-red);
+		font-size: 0.85rem;
+		font-weight: bold;
+		padding: 0.75rem 1rem;
+		text-shadow: 0 0 6px var(--neon-red);
+	}
+
+	.field-error {
+		margin: 0;
+		color: var(--neon-red);
+		font-size: 0.75rem;
+		line-height: 1.4;
+		text-shadow: 0 0 5px var(--neon-red);
+	}
+
+	.has-error {
+		animation: shake 350ms ease-in-out;
+	}
+
+	.shake {
+		animation: shake 350ms ease-in-out;
+	}
+
+	#results:not(:empty) {
+		margin-top: 2rem;
+		min-height: 6rem;
+		border: 2px dashed var(--neon-blue);
+		background: var(--panel);
+		padding: 1.5rem 1rem;
+	}
+
+	.loading {
+		font-size: 0.85rem;
+		margin: 0;
+		animation: pulse 1.2s ease-in-out infinite;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.35;
+		}
+	}
+
+	@keyframes shake {
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20%,
+		60% {
+			transform: translateX(-6px);
+		}
+		40%,
+		80% {
+			transform: translateX(6px);
+		}
+	}
+
+	.battle-grid {
+		display: flex;
+		flex-direction: row;
+		gap: 1.5rem;
+		align-items: center;
+	}
+
+	.player-panel {
+		flex: 1;
+		min-width: 0;
+		text-align: left;
+	}
+
+	.player-panel h2 {
+		font-size: 1rem;
+		margin: 0 0 0.5rem;
+		word-break: break-word;
+	}
+
+	.total {
+		color: var(--neon-purple);
+		margin: 0;
+	}
+
+	.range {
+		font-size: 0.75rem;
+		opacity: 0.8;
+		margin: 0 0 0.75rem;
+	}
+
+	.grid {
+		display: flex;
+		gap: 2px;
+		overflow-x: auto;
+	}
+
+	.week {
+		display: grid;
+		grid-template-rows: repeat(7, 12px);
+		gap: 2px;
+	}
+
+	.day {
+		width: 12px;
+		height: 12px;
+	}
+
+	.vs-badge {
+		font-family: 'Press Start 2P', monospace;
+		font-size: 1rem;
+		color: var(--neon-blue);
+		text-shadow: 0 0 8px var(--neon-blue);
+	}
+
+	@media (max-width: 1024px) {
+		main {
+			max-width: 760px;
+		}
+
+		.battle-grid {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.vs-badge {
+			align-self: center;
+		}
+	}
+
+	@media (max-width: 768px) {
+		main {
+			padding: 1.5rem 1rem;
+		}
+
+		h1 {
+			font-size: 1.35rem;
+			line-height: 1.5;
+		}
+
+		.subtitle {
+			font-size: 0.625rem;
+			line-height: 1.6;
+			margin-bottom: 1.5rem;
+		}
+
+		.players {
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		label,
+		.range {
+			font-size: 0.7rem;
+		}
+
+		input {
+			width: 100%;
+			font-size: 0.9rem;
+		}
+
+		button {
+			width: 100%;
+			font-size: 0.75rem;
+			line-height: 1.5;
+		}
+
+		#results:not(:empty) {
+			margin-top: 1.5rem;
+			padding: 1rem 0.75rem;
+		}
+
+		.player-panel h2,
+		.vs-badge {
+			font-size: 0.85rem;
+		}
+
+		.total,
+		.loading,
+		#battle-error {
+			font-size: 0.8rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.loading,
+		.has-error,
+		.shake {
+			animation: none;
+		}
+	}
+</style>

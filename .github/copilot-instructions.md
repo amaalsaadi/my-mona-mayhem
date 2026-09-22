@@ -21,6 +21,31 @@ npx astro check   # Run Astro's type and diagnostics checks when needed
 
 On Windows PowerShell, use `npm.cmd` instead of `npm` if script execution is disabled, for example `npm.cmd install`.
 
+## Retro Arcade Design Guide
+
+The battle page (`src/pages/index.astro`) uses a dark retro-arcade visual theme. Follow these conventions when adding or modifying UI.
+
+### Colors
+
+- Background: `--bg: #0d0d0d` (near-black), panels: `--panel: #1a1a1a`.
+- Accent colors are defined as CSS custom properties on `:root` and referenced via `var(...)`, never hard-coded inline:
+  - `--neon-blue: #3b9bff`
+  - `--neon-purple: #8a2be2`
+- Use blue for primary/informational elements (title, inputs, button borders, contribution grid borders) and purple for secondary/emphasis elements (subtitle, focus states, totals, VS badge). When introducing a new accent, add it as a new `--neon-*` custom property rather than a literal color value.
+
+### Fonts
+
+- Headings and UI chrome (title, subtitle, button) use **"Press Start 2P"** from Google Fonts, loaded via `<link>` tags in the page `<head>`, with `monospace` as the fallback.
+- Body copy and data (inputs, contribution details) use plain `monospace` for readability, since Press Start 2P is hard to read at small sizes/long strings (usernames).
+
+### Animation Style
+
+- Motion should feel like an arcade/CRT display: glowing, pulsing, and shimmering rather than sliding panels or bouncing UI.
+- Keep animations subtle and slow (roughly 1.5–3s loops) so the page stays readable; avoid rapid strobing.
+- Prefer `opacity`, `color`, `text-shadow`/`box-shadow`, `background-position`, and `transform: scale`/`translate` for effects; avoid layout-shifting animations.
+- Always provide a `prefers-reduced-motion: reduce` fallback that disables or significantly tones down looping animations.
+- Reuse existing animation patterns where possible: pulsing glow on headings, color-shifting text for loading states, and hover-triggered glow on interactive/data elements (e.g. contribution squares).
+
 ## Astro Guidance
 
 - Prefer Astro pages and components for server-rendered UI; add client-side JavaScript only where interaction requires it.
