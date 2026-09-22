@@ -302,7 +302,7 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 				}
 
 				.top-bar {
-					justify-content: stretch;
+					justify-content: center;
 				}
 
 				.theme-toggle,
@@ -315,7 +315,12 @@ const themeStorageKey = 'monaMayhemBattleTheme';
 	<body>
 		<div class="page-shell">
 			<div class="top-bar">
-				<button class="theme-toggle" type="button" data-theme-toggle>
+				<button
+					class="theme-toggle"
+					type="button"
+					data-theme-toggle
+					aria-label="Toggle battle color theme"
+				>
 					🎨 Switch to Blue/Orange Theme
 				</button>
 			</div>
