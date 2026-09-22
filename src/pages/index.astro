@@ -1,5 +1,5 @@
 ---
-
+import battleThemeScript from '../scripts/initBattleTheme.js?url';
 ---
 
 <html lang="en">
@@ -8,10 +8,405 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Mona Mayhem</title>
+		<title>Mona Mayhem — GitHub Contribution Battle</title>
+		<style>
+			:root,
+			:root[data-battle-theme='classic'] {
+				--bg-color: #0a0a1a;
+				--panel-color: rgba(18, 16, 38, 0.92);
+				--panel-border: rgba(95, 237, 131, 0.4);
+				--text-primary: #f5f7ff;
+				--text-secondary: #bcc1d9;
+				--accent-primary: #5fed83;
+				--accent-secondary: #8a2be2;
+				--accent-primary-soft: rgba(95, 237, 131, 0.18);
+				--accent-secondary-soft: rgba(138, 43, 226, 0.2);
+				--button-text: #07110b;
+				--input-bg: rgba(8, 10, 26, 0.78);
+				--card-shadow: 0 0 24px rgba(95, 237, 131, 0.25);
+			}
+
+			:root[data-battle-theme='blue-orange'] {
+				--panel-border: rgba(0, 245, 255, 0.42);
+				--accent-primary: #00f5ff;
+				--accent-secondary: #ff6b35;
+				--accent-primary-soft: rgba(0, 245, 255, 0.18);
+				--accent-secondary-soft: rgba(255, 107, 53, 0.2);
+				--button-text: #05131c;
+				--card-shadow: 0 0 24px rgba(0, 245, 255, 0.24);
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+				background:
+					radial-gradient(circle at top, var(--accent-secondary-soft), transparent 35%),
+					radial-gradient(circle at bottom, var(--accent-primary-soft), transparent 30%),
+					var(--bg-color);
+				color: var(--text-primary);
+				min-height: 100vh;
+				position: relative;
+				overflow-x: hidden;
+			}
+
+			body::before {
+				content: '';
+				position: fixed;
+				inset: 0;
+				background:
+					repeating-linear-gradient(
+						to bottom,
+						rgba(255, 255, 255, 0.04) 0,
+						rgba(255, 255, 255, 0.04) 1px,
+						transparent 1px,
+						transparent 5px
+					);
+				mix-blend-mode: screen;
+				opacity: 0.15;
+				pointer-events: none;
+			}
+
+			.page-shell {
+				width: min(1080px, calc(100% - 2rem));
+				margin: 0 auto;
+				padding: 2rem 0 4rem;
+			}
+
+			.top-bar {
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+				justify-content: flex-end;
+				margin-bottom: 2rem;
+			}
+
+			.theme-toggle {
+				border: 1px solid var(--panel-border);
+				background: var(--panel-color);
+				color: var(--text-primary);
+				border-radius: 999px;
+				padding: 0.85rem 1.2rem;
+				font: inherit;
+				font-weight: 700;
+				cursor: pointer;
+				box-shadow: var(--card-shadow);
+				transition: transform 0.2s ease, border-color 0.2s ease;
+			}
+
+			.theme-toggle:hover {
+				transform: translateY(-1px);
+				border-color: var(--accent-primary);
+			}
+
+			.theme-toggle:focus-visible {
+				outline: 2px solid var(--accent-primary);
+				outline-offset: 3px;
+				border-color: var(--accent-primary);
+			}
+
+			.theme-status {
+				color: var(--text-secondary);
+				font-weight: 700;
+			}
+
+			.hero,
+			.battle-stage {
+				background: var(--panel-color);
+				border: 1px solid var(--panel-border);
+				border-radius: 24px;
+				padding: 2rem;
+				box-shadow: var(--card-shadow);
+				backdrop-filter: blur(12px);
+			}
+
+			.hero {
+				text-align: center;
+				margin-bottom: 1.5rem;
+			}
+
+			.badge,
+			.section-label {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+				font-size: 0.8rem;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				color: var(--accent-primary);
+				font-family: 'Courier New', monospace;
+			}
+
+			h1,
+			h2,
+			.stat-value {
+				font-family: 'Courier New', monospace;
+			}
+
+			h1 {
+				font-size: clamp(2rem, 6vw, 3.9rem);
+				line-height: 1.2;
+				margin: 1.5rem 0 1rem;
+				color: var(--accent-primary);
+				text-shadow:
+					0 0 12px var(--accent-primary),
+					0 0 24px var(--accent-secondary);
+			}
+
+			.hero p,
+			.card-copy {
+				color: var(--text-secondary);
+				max-width: 700px;
+				margin: 0 auto;
+			}
+
+			.hero-stats,
+			.results-grid,
+			.form-grid {
+				display: grid;
+				gap: 1rem;
+			}
+
+			.hero-stats {
+				grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+				margin-top: 1.75rem;
+			}
+
+			.stat,
+			.result-card {
+				padding: 1rem;
+				border-radius: 18px;
+				background: linear-gradient(180deg, var(--accent-primary-soft), transparent);
+				border: 1px solid var(--panel-border);
+			}
+
+			.stat-value {
+				color: var(--accent-primary);
+				font-size: 1rem;
+				margin-bottom: 0.5rem;
+			}
+
+			.stat-label {
+				color: var(--text-secondary);
+				font-size: 0.95rem;
+			}
+
+			.battle-stage h2 {
+				font-size: 1.2rem;
+				margin: 1rem 0;
+				color: var(--accent-secondary);
+			}
+
+			.form-grid,
+			.results-grid {
+				grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+			}
+
+			.field {
+				display: grid;
+				gap: 0.6rem;
+			}
+
+			label {
+				font-weight: 700;
+				color: var(--text-primary);
+			}
+
+			input {
+				width: 100%;
+				border: 1px solid var(--panel-border);
+				background: var(--input-bg);
+				color: var(--text-primary);
+				border-radius: 14px;
+				padding: 0.95rem 1rem;
+				font: inherit;
+			}
+
+			input:focus {
+				outline: 2px solid var(--accent-primary);
+				outline-offset: 2px;
+			}
+
+			.actions {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: 1rem;
+				margin: 1.5rem 0 2rem;
+			}
+
+			.battle-button {
+				border: none;
+				border-radius: 999px;
+				padding: 1rem 1.4rem;
+				font: inherit;
+				font-weight: 700;
+				cursor: pointer;
+				background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+				color: var(--button-text);
+				box-shadow: 0 0 22px var(--accent-primary-soft);
+			}
+
+			.battle-button:focus-visible {
+				outline: 2px solid var(--accent-primary);
+				outline-offset: 3px;
+				box-shadow:
+					0 0 0 3px var(--accent-primary-soft),
+					0 0 22px var(--accent-primary-soft);
+			}
+
+			.helper-copy,
+			.result-meta {
+				color: var(--text-secondary);
+			}
+
+			.results-grid {
+				margin-top: 1rem;
+			}
+
+			.result-card {
+				position: relative;
+				overflow: hidden;
+			}
+
+			.result-card::after {
+				content: '';
+				position: absolute;
+				inset: -40% auto auto -20%;
+				width: 60%;
+				height: 180%;
+				background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+				transform: rotate(18deg);
+			}
+
+			.result-card h3 {
+				font-size: 1.1rem;
+				margin-bottom: 0.75rem;
+			}
+
+			.user-handle {
+				color: var(--accent-primary);
+				font-family: 'Courier New', monospace;
+				font-size: 0.82rem;
+			}
+
+			.vs-pill {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 4rem;
+				height: 4rem;
+				border-radius: 50%;
+				background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+				color: var(--button-text);
+				font-family: 'Courier New', monospace;
+				margin: 1rem auto;
+				box-shadow: 0 0 22px var(--accent-secondary-soft);
+			}
+
+			@media (max-width: 640px) {
+				.page-shell {
+					width: min(100% - 1rem, 1080px);
+					padding-top: 1rem;
+				}
+
+				.hero,
+				.battle-stage {
+					padding: 1.5rem;
+				}
+
+				.top-bar {
+					justify-content: center;
+					flex-direction: column;
+				}
+
+				.theme-toggle,
+				.battle-button {
+					width: 100%;
+				}
+			}
+		</style>
 	</head>
 	<body>
-		<h1>Mona Mayhem</h1>
-		<p>Welcome to Mona Mayhem! Time to build a GitHub Contribution Battle Arena.</p>
+		<div class="page-shell">
+			<div class="top-bar">
+				<p class="theme-status" data-theme-status>Current theme: Classic Green/Purple</p>
+				<button
+					class="theme-toggle"
+					type="button"
+					data-theme-toggle
+					aria-label="Current theme is Classic Green/Purple. Activate to switch to Blue/Orange Theme"
+					aria-pressed="false"
+				>
+					🎨 Switch to Blue/Orange Theme
+				</button>
+			</div>
+
+			<section class="hero">
+				<div class="badge">🎮 Retro arcade showdown</div>
+				<h1>Mona Mayhem</h1>
+				<p>
+					Battle two GitHub profiles head-to-head in a neon-soaked arena, then toggle between the
+					classic green/purple palette and a blue/orange remix.
+				</p>
+
+				<div class="hero-stats">
+					<div class="stat">
+						<div class="stat-value">Theme-ready</div>
+						<div class="stat-label">Built with CSS custom properties for quick palette swaps</div>
+					</div>
+					<div class="stat">
+						<div class="stat-value">Arcade vibes</div>
+						<div class="stat-label">CRT scanlines, neon glows, and pixel-font callouts</div>
+					</div>
+					<div class="stat">
+						<div class="stat-value">Toggleable</div>
+						<div class="stat-label">One click switches between classic and alt battle palettes</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="battle-stage">
+				<div class="section-label">⚡ Battle page preview</div>
+				<h2>Choose your challengers</h2>
+
+				<div class="form-grid">
+					<div class="field">
+						<label for="player-one">Player one</label>
+						<input id="player-one" type="text" name="playerOne" value="monalisa" />
+					</div>
+					<div class="field">
+						<label for="player-two">Player two</label>
+						<input id="player-two" type="text" name="playerTwo" value="octocat" />
+					</div>
+				</div>
+
+				<div class="actions">
+					<button class="battle-button" type="button">🚀 Start Battle</button>
+					<p class="helper-copy">The alternate palette reuses the same retro styling with new accent tokens.</p>
+				</div>
+
+				<div class="vs-pill">VS</div>
+
+				<section class="results-grid" aria-label="Battle results preview">
+					<article class="result-card">
+						<p class="user-handle">@monalisa</p>
+						<h3>1,284 contributions</h3>
+						<p class="result-meta">Legend glow, graphs, buttons, and cards all follow the active theme variables.</p>
+					</article>
+					<article class="result-card">
+						<p class="user-handle">@octocat</p>
+						<h3>1,102 contributions</h3>
+						<p class="result-meta">Swap the palette without rewriting component-level CSS.</p>
+					</article>
+				</section>
+			</section>
+		</div>
+
+		<script type="module" src={battleThemeScript}></script>
 	</body>
 </html>
